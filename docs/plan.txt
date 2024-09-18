@@ -1,0 +1,9 @@
+BUGS
+
+
+CURRENT
+[ ] think of a way to allow adjustment of tick period during play
+[ ] add an Observe mode
+
+
+DONE

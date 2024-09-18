@@ -1,0 +1,44 @@
+<div id="control" class="p-1 m-2">
+  <%= if Application.get_env(:crossfire, :dev_or_prod) == :dev do %>
+    <span class="text-red-500 font-bold">DEVELOPMENT</span>
+    <span class="mx-3">|</span>
+  <% end %>
+  <span class="mr-3">
+  <.link navigate={~p"/games"}>Back to Games List</.link>
+  </span>
+  <%= if @gmstate.status != :ended do %>
+    <span class="mr-3">|</span>
+    <.link phx-click="abandon_game"
+          data-confirm="Abandon the game?"
+          phx-value-game_id={@game_id}>Abandon Game</.link>
+  <% end %>
+</div>
+
+<div id="game-container" phx-hook="GameKeyboardControls" class="max-w-full mx-auto p-4 flex flex-col items-center">
+  <Components.scoreboard pn={@pn}
+                         game_status={@gmstate.status}
+                         players_ready={@gmstate.players_ready}
+                         scores={@gmstate.game.scores} />
+
+  <%= if @gmstate.owner_id == @player_id && @gmstate.status == :waiting_for_players do %>
+    <div class="m-1 text-center">
+    <p>Share this game with your friends so they can join</p>
+    <pre class="my-2 bg-orange-100 p-1 px-2"><%= Application.get_env(:crossfire, :base_url) %>/games/<%= @game_id %>/join</pre>
+    </div>
+  <% end %>
+
+  <div class="m-1">
+    <pre><%= @game_announcement_message %></pre>
+  </div>
+
+  <div class="mb-4"></div> <!-- vertical spacer -->
+
+  <canvas id="game-board" width="504" height="504"
+          phx-hook="DrawGame"
+          data-game-state={Jason.encode!(@gmstate.game)}
+          data-game-status={"#{@gmstate.status}"}
+          data-holding-shots={Jason.encode!(@holding_shots)}
+          data-player-num={@pn}>
+  </canvas>
+</div>
+

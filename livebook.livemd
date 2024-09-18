@@ -1,0 +1,17 @@
+# Crossfire
+
+## Section
+
+```elixir
+alias Crossfire.Core.Debug
+```
+
+```elixir
+alias Crossfire.Core.Lobby.Api, as: LobbyApi
+
+```
+
+```elixir
+LobbyApi.list_games()
+
+```

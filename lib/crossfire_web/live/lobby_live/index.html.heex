@@ -1,0 +1,109 @@
+<.flash_group flash={@flash} />
+
+<div class="m-4">
+  <%= if Application.get_env(:crossfire, :dev_or_prod) == :dev do %>
+    <div class="border-b-2 border-red-500 text-red-500 font-bold">DEVELOPMENT</div>
+  <% end %>
+
+<div class="mt-2 md:flex md:items-center md:space-x-4 space-y-4 md:space-y-0">
+  <form phx-change="update_bot_count" class="w-full sm:w-auto sm:min-w-[300px]">
+    <div>
+      <select id="bot-selection"
+              name="bot_count"
+              value={@bot_count}
+              class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+        <option value="0" selected={@bot_count in [0, "0"]}>4 Human Players</option>
+        <option value="2" selected={@bot_count in [2, "2"]}>2 Humans, 2 Computer Players</option>
+        <option value="3" selected={@bot_count in [3, "3"]}>1 Human (me), 3 Computer Players</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+    <%= if @can_create_private_game do %>
+      <button type="button"
+              class="w-full md:w-auto px-4 py-2 bg-gray-700 text-white rounded-md flex flex-col items-center justify-center whitespace-normal text-center leading-tight"
+              phx-click="create_new_game"
+              phx-value-visibility="private"
+              phx-value-bot-count={@bot_count}>
+        <span>New Private Game</span>
+        <span>(<%= 4 - @bot_count %> Players, <%= @bot_count %> Bots)</span>
+      </button>
+    <% end %>
+
+    <%= if @can_create_public_game do %>
+      <button type="button"
+              class="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded-md flex flex-col items-center justify-center whitespace-normal text-center leading-tight"
+              phx-click="create_new_game"
+              phx-value-visibility="public"
+              phx-value-bot-count={@bot_count}>
+        <span>New Public Game</span>
+        <span>(<%= 4 - @bot_count %> Players, <%= @bot_count %> Bots)</span>
+      </button>
+    <% end %>
+  </div>
+</div>
+
+  <%= if false do %>
+  <div class="flex space-x-2">
+    <%= if @can_create_private_game do %>
+      <.button class="mt-2 mb-2 mr-2" phx-click="create_new_game" phx-value-visibility={"private"}>New Private Game</.button>
+    <% end %>
+
+    <%= if @can_create_public_game do %>
+      <.button class="!bg-blue-500 mt-2 mb-2" phx-click="create_new_game" phx-value-visibility={"public"}>New Public Game</.button>
+    <% end %>
+  </div>
+  <% end %>
+
+  <div class="mt-4">
+    <h1 class="text-lg">
+      Games
+    </h1>
+
+    <.table id="games-list" rows={@streams.games}>
+      <:col :let={{_id, game}} label="Game">
+        <%= game.id %>
+      </:col>
+      <:col :let={{_id, game}} label="">
+        <span class="pl-2 font-normal">
+          <%= if game.visibility == :private do %>
+            my private game
+          <% else %>
+            <%= if game.player_role == :owner do %>
+              my public game
+            <% else %>
+              public game
+            <% end %>
+          <% end %>
+        </span>
+      </:col>
+      <:col :let={{_id, game}} label="Status">
+        <%= Crossfire.Core.Const.game_status_title(game.status) %>
+      </:col>
+      <:col :let={{_id, game}} label="Players">
+        <%= "#{game.player_count}/#{Const.num_players()}" %>
+      </:col>
+
+      <:action :let={{_id, game}}>
+        <%= if @player_id in Map.values(game.players) do %>
+          <div>
+            <.button class="m-1 mt-0 mb-2 !bg-green-500" phx-click="play_game" phx-value-game_id={game.id}>Play Game</.button>
+          </div>
+          <div>
+            <%= if game.status != :ended do %>
+              <.button class="m-1 !bg-gray-500" phx-click="abandon_game"
+                    data-confirm="Abandon the game?"
+                    phx-value-game_id={game.id}>Abandon Game</.button>
+            <% end %>
+          </div>
+        <% else %>
+          <%= if game.status == :waiting_for_players do %>
+            <.button class="m-1 mt-0 !bg-green-500" phx-click="join_game" phx-value-game_id={game.id}>Join Game</.button>
+          <% end %>
+        <% end %>
+      </:action>
+    </.table>
+  </div>
+</div>
+

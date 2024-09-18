@@ -1,0 +1,94 @@
+I will provide some background on my project.
+Please review the following information and acknowledge when it is understood.
+Please do not summarize or otherwise comment until I ask questions.
+And when I do ask questions, please respond as accurately as possible, and without
+going into excessive detail or providing unrequested examples.
+I will request additional information or examples when necessary.
+
+I am building a multiplayer web-based game using Phoenix LiveView and Elixir.
+I call it "Crossfire".
+
+Game Rules
+
+The game has four players arranged around an RxC board, like a chess or checker board.
+Each player occupies one side.
+
+The players "shoot" at their opposite opponent, sending a block traveling away from
+their side and toward the opposing side.  When a block reaches the opposite side
+boundary without colliding with any other blocks, the player who fired the shot gets
+a point.  Once a player reaches the maximum number of points, the game ends.
+
+Each game tick (cycle of game loop), active blocks attempt to step forward one position.
+If any blocks attempt to step into the same position on the board, the "colliding" blocks
+are removed from the board (from the active blocks list).  Also, if two opposing blocks
+would cross through each other while each traveling forward, they are removed.
+
+Players are limited to N active blocks at a time.
+
+This is not important, but the typical constant values are:
+max_players = 4. (actually all four players are required in order to start the game)
+max_rows = 8.
+max_cols = 8. (8x8 board)
+max_score = 20.
+game_tick_period = 500ms.
+
+Architecture
+
+Players (clients) use LiveView with some JavaScript hooks to create, join, and play games.
+There are essentially two "pages": the Lobby, and the Game (currently being played by user).
+
+There is a LobbyServer (GenServer), a GamesSupervisor (GenServer), and potentially multiple
+GameManagers (GenServers).
+
+LobbyServer and GamesSupervisor are single servers managed by the app supervisor.
+
+LobbyServer keeps track of which games are in existence and provides an interface for
+creating and joining games.
+
+GamesSupervisor is used to start (own) GameManagers, and a GameManager is a GenServer that
+stores a single game state and manages game logic (via Game module).
+
+Code Organization
+
+Relevant LiveView pages:
+
+LobbyLive.Index manages the game lobby, lists of games, creating/joining games.
+GameLive.Index handles gameplay, relying on JavaScript hooks for game presentation and player input handling.
+
+LobbyServer is made up of three modules:
+Lobby.Api, which provides the interface (functions).
+Lobby.Server, which has the actual backend logic to handle the "api" calls.
+Lobby.State, which maintains the list of games (actually GameMetadata).
+Clients of LobbyServer may refer to Lobby.Api or Lobby.Server as "LobbyServer" depending upon which of the
+two modules they interact with -- usually Api.
+Lobby.State is often referred to as LobbyState.
+
+GameManager is made up of three modules:
+GameManager.Api
+GameManager.Server
+GameManager.State
+As with LobbyServer, GameManager consumers will typically require Api (but may instead require Server).  Whichever is required is still referred to as "GameServer" or perhaps "GameManager" (I forget... but it might not be 100% consistent across all consumers).
+GameManager.State is generally referred to as GMState.
+GMState stores the GameState as well as some details like players list, ready_players list, etc.
+
+Game has a few modules and related files:
+game.ex is the actual Game module which has the game logic functions.
+Game.Block defines the structure of an active game block (shot), namely the position and the player it belongs to.
+Game.State is the state of the game, which is really just the scores and the active_blocks.
+
+Extra Details
+
+Games have a few states: waiting_for_players, countdown, playing, ended
+
+When a player creates or joins a game, they are redirected to the GameLive.Index page.
+Arriving at that page causes a "ready" message to be sent to the GameManager, and that
+player is marked as ready.  Once all four players are marked ready, a countdown timer
+is started.  After a few seconds, the game begins its game loop and the game state becomes
+:playing.
+
+If a player abandons the game (via an Abandon Game link/action/event), the game ends.
+
+Regardless of why a game ends, upon reaching :ended state, an expiration timer is started.
+Once the expiration timer fires, the GameManager is shut down, the Lobby is notified of the
+termination of the game, and players on the Lobby page see the game disappear from their list.
+
