@@ -4,6 +4,8 @@
 
 Crossfire is a simple 4-player game. The project was an exercise and opportunity for the author (me) to learn/improve Elixir, Phoenix LiveView, and BEAM skills. This game should not be considered finished, and expectations of its entertainment value should be kept low.
 
+[Live Demo](https://crossfiregame.com)
+
 ## License and Terms of Use
 
 This code is provided as-is, with no warranty or support. The author may respond
